@@ -1,19 +1,19 @@
 /*
 Pacakge fiplog provides log wrapper
- */
+*/
 package fiplog
 
 import (
-	"strings"
-	"os"
-	"io"
-	"time"
-	"regexp"
 	"fmt"
-	"runtime"
-	"sync"
-	"fipml"
+	"github.com/fipress/fml"
+	"io"
 	"log"
+	"os"
+	"regexp"
+	"runtime"
+	"strings"
+	"sync"
+	"time"
 )
 
 type Level int
@@ -24,16 +24,17 @@ const (
 	LevelWarning
 	LevelError
 )
-var prefix = [4]string {"DEBUG","INFO","WARNING","ERROR"}
+
+var prefix = [4]string{"DEBUG", "INFO", "WARNING", "ERROR"}
 
 const (
 	defaultBufferSize = 1024 * 64
 	defaultDateFormat = `%df{2006-01-02 15:04:05}`
-	defaultPattern = `%date [%level] %file - %msg`
-	dateF = "%date"
-	fileF = "%file"
-	levelF = "%level"
-	msgF = "%msg"
+	defaultPattern    = `%date [%level] %file - %msg`
+	dateF             = "%date"
+	fileF             = "%file"
+	levelF            = "%level"
+	msgF              = "%msg"
 )
 
 var dateFormatR = regexp.MustCompile(`%df\{(.*)\}`)
@@ -41,30 +42,29 @@ var dateFormatR = regexp.MustCompile(`%df\{(.*)\}`)
 type Config struct {
 	Level Level
 	//levelTo Level
-	Filename  string
-	BufSize int
+	Filename string
+	BufSize  int
 	//size todo: rolling
 	Pattern string //todo: pattern
 }
 
 type Logger struct {
 	//config *Config
-	mutex 		sync.Mutex
-	level		Level
+	mutex sync.Mutex
+	level Level
 	//levelTo		Level
-	buffer		[]byte
-	bufSize		int
+	buffer  []byte
+	bufSize int
 	//format		string
-	writer		io.WriteCloser
-	pattern		string
-	ch			chan bool
-	flushMu		sync.Mutex
+	writer  io.WriteCloser
+	pattern string
+	ch      chan bool
+	flushMu sync.Mutex
 	/*debugLogger *log.Logger
 	infoLogger *log.Logger
 	warnLogger *log.Logger
 	errorLogger *log.Logger*/
 }
-
 
 var (
 	//discard = log.New(ioutil.Discard,"",0)
@@ -80,15 +80,15 @@ func GetLogger() *Logger {
 	return logger
 }
 
-func Init()  {
+func Init() {
 	if logger == nil {
 		//config := &Config{LevelWarning, "stdout",4096,"%df{2006-01-02 15:04} [%level] %file - %msg"} //todo: read config file
 
 		//wd := os.Getwd()
-		fml, err := fipml.Load("fiplog.fml")
+		fml, err := fml.Load("fiplog.fml")
 		if err != nil {
 			fmt.Println("fiplog.fml not found, use default config.")
-			config := &Config{LevelInfo, "",defaultBufferSize,defaultPattern}
+			config := &Config{LevelInfo, "", defaultBufferSize, defaultPattern}
 			InitWithConfig(config)
 		} else {
 			InitWithFml(fml)
@@ -97,13 +97,13 @@ func Init()  {
 	}
 }
 
-func InitWithFml(fml *fipml.FML) {
+func InitWithFml(fml *fml.FML) {
 	config := new(Config)
-	config.Filename = fml.GetString("file","")
-	config.Level = getLevel(fml.GetString("level",""))
+	config.Filename = fml.GetString("file", "")
+	config.Level = getLevel(fml.GetString("level", ""))
 	config.BufSize = fml.GetInt("bufSize", defaultBufferSize)
-	config.Pattern = fml.GetString("pattern",defaultPattern)
-	logger =  InitWithConfig(config)
+	config.Pattern = fml.GetString("pattern", defaultPattern)
+	logger = InitWithConfig(config)
 }
 
 func InitWithConfig(config *Config) *Logger {
@@ -115,9 +115,9 @@ func InitWithConfig(config *Config) *Logger {
 		} else {
 			logger.bufSize = config.BufSize
 		}
-		logger.buffer = make([]byte,0,logger.bufSize)
-		if strings.Contains(config.Pattern,dateF) {
-			logger.pattern = strings.Replace(config.Pattern,dateF,defaultDateFormat,1)
+		logger.buffer = make([]byte, 0, logger.bufSize)
+		if strings.Contains(config.Pattern, dateF) {
+			logger.pattern = strings.Replace(config.Pattern, dateF, defaultDateFormat, 1)
 		} else {
 			logger.pattern = config.Pattern
 		}
@@ -158,11 +158,11 @@ func InitWithConfig(config *Config) *Logger {
 }
 
 func (l *Logger) Close() {
-	l.flushAndClose(l.buffer,true)
+	l.flushAndClose(l.buffer, true)
 }
 
 func getLevel(s string) Level {
-	switch strings.ToUpper(s){
+	switch strings.ToUpper(s) {
 	case "DEBUG":
 		return LevelDebug
 	case "INFO":
@@ -180,9 +180,9 @@ func (l *Logger) format(level Level, msg string) (formatted string) {
 	if dateFormatR.MatchString(formatted) {
 		now := time.Now()
 		dt := now.Format(dateFormatR.FindStringSubmatch(formatted)[1])
-		formatted = dateFormatR.ReplaceAllString(formatted,dt)
+		formatted = dateFormatR.ReplaceAllString(formatted, dt)
 	}
-	if(strings.Contains(formatted, fileF)) {
+	if strings.Contains(formatted, fileF) {
 		counter, file, line, ok := runtime.Caller(3)
 		if !ok {
 			file = "???"
@@ -196,24 +196,24 @@ func (l *Logger) format(level Level, msg string) (formatted string) {
 			}
 		}
 
-		fs := fmt.Sprintf("<%d>%v:%v",counter,short,line)
-		formatted = strings.Replace(formatted, fileF,fs,1)
+		fs := fmt.Sprintf("<%d>%v:%v", counter, short, line)
+		formatted = strings.Replace(formatted, fileF, fs, 1)
 	}
-	if(strings.Contains(formatted,levelF)) {
-		formatted = strings.Replace(formatted, levelF, prefix[level],1)
+	if strings.Contains(formatted, levelF) {
+		formatted = strings.Replace(formatted, levelF, prefix[level], 1)
 	}
-	formatted = strings.Replace(formatted, msgF,msg,1)
+	formatted = strings.Replace(formatted, msgF, msg, 1)
 
 	return
 }
 
 func (l *Logger) log(level Level, msg string) {
 	//log.Println("level:",level,"l.level:",l.level,",msg:",msg)
-	if(level < l.level ) {
+	if level < l.level {
 		return
 	}
 
-	formatted := l.format(level,msg)
+	formatted := l.format(level, msg)
 	if l.writer == os.Stdout {
 		l.writer.Write([]byte(formatted))
 	} else {
@@ -224,7 +224,7 @@ func (l *Logger) log(level Level, msg string) {
 		}
 		l.buffer = append(l.buffer, formatted...)
 		len := len(formatted)
-		if ( len > 0 && formatted[len-1] != '\n') {
+		if len > 0 && formatted[len-1] != '\n' {
 			l.buffer = append(l.buffer, '\n')
 		}
 		l.mutex.Unlock()
@@ -256,43 +256,43 @@ func (l *Logger) log(level Level, msg string) {
 	return
 }
 
-func (l *Logger) Debug(v...interface {}) {
+func (l *Logger) Debug(v ...interface{}) {
 	msg := fmt.Sprintln(v...)
 	l.log(LevelDebug, msg)
 }
 
-func (l *Logger) Debugf(format string, v...interface {}) {
-	msg := fmt.Sprintf(format,v...)
+func (l *Logger) Debugf(format string, v ...interface{}) {
+	msg := fmt.Sprintf(format, v...)
 	l.log(LevelDebug, msg)
 }
 
-func (l *Logger) Info(v...interface {}) {
+func (l *Logger) Info(v ...interface{}) {
 	msg := fmt.Sprintln(v...)
-	l.log(LevelInfo,msg)
-}
-
-func (l *Logger) Infof(format string, v...interface {}) {
-	msg := fmt.Sprintf(format,v...)
 	l.log(LevelInfo, msg)
 }
 
-func (l *Logger) Warning(v...interface {}) {
+func (l *Logger) Infof(format string, v ...interface{}) {
+	msg := fmt.Sprintf(format, v...)
+	l.log(LevelInfo, msg)
+}
+
+func (l *Logger) Warning(v ...interface{}) {
 	msg := fmt.Sprintln(v...)
 	l.log(LevelWarning, msg)
 }
 
-func (l *Logger) Warningf(format string, v...interface {}) {
+func (l *Logger) Warningf(format string, v ...interface{}) {
 	msg := fmt.Sprintf(format, v...)
 	l.log(LevelWarning, msg)
 }
 
-func (l *Logger) Error(v...interface {}) {
+func (l *Logger) Error(v ...interface{}) {
 	msg := fmt.Sprintln(v...)
-	l.log(LevelError,msg)
+	l.log(LevelError, msg)
 }
 
-func (l *Logger) Errorf(format string, v...interface {}) {
-	msg:= fmt.Sprintf(format,v...)
+func (l *Logger) Errorf(format string, v ...interface{}) {
+	msg := fmt.Sprintf(format, v...)
 	l.log(LevelError, msg)
 }
 
@@ -303,9 +303,9 @@ func (l *Logger) Flush(buffer []byte) {
 func (l *Logger) flushAndClose(buffer []byte, close bool) {
 	l.flushMu.Lock()
 	//log.Println("flush buffer lenght:",len(buffer))
-	_,err := l.writer.Write(buffer)
+	_, err := l.writer.Write(buffer)
 	if err != nil {
-		fmt.Println("Flush log error:",err)
+		fmt.Println("Flush log error:", err)
 	}
 	if close {
 		l.writer.Close()
@@ -317,11 +317,9 @@ func (l *Logger) flushAndClose(buffer []byte, close bool) {
 func openFile(name string) io.WriteCloser {
 	file, err := os.OpenFile(name, os.O_CREATE|os.O_APPEND|os.O_WRONLY, os.FileMode(0644))
 	if err != nil {
-		log.Println("Open log file failed, filename:",name, ",err:",err)
+		log.Println("Open log file failed, filename:", name, ",err:", err)
 		return os.Stdout
 	} else {
 		return file
 	}
 }
-
-

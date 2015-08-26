@@ -1,10 +1,9 @@
 package fiplog
 
-
 type fakeio int
 
-func (f fakeio ) Write(p []byte) (n int, err error) {
-	return len(p),nil
+func (f fakeio) Write(p []byte) (n int, err error) {
+	return len(p), nil
 }
 
 func (f fakeio) Close() error {

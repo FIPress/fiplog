@@ -1,8 +1,8 @@
 package fiplog
 
 import (
-	"testing"
 	"fmt"
+	"testing"
 	"time"
 )
 
@@ -11,12 +11,12 @@ var c chan bool
 func TestInit(t *testing.T) {
 	logger := GetLogger()
 
-//	logger.Log(Warning, "warning message")
+	//	logger.Log(Warning, "warning message")
 	logger.Debug("debug message")
 	logger.Error("error message")
 	logger.Info("info message")
-	logger.Warning("warning","message")
-	logger.Errorf("this is the %d message",2)
+	logger.Warning("warning", "message")
+	logger.Errorf("this is the %d message", 2)
 	logger.Close()
 	/*logger.Debug("debug message")
 	logger.Info("info message")
@@ -32,6 +32,6 @@ func TestInit(t *testing.T) {
 func sub(buf []byte) {
 	fmt.Println("sub:enter")
 	time.Sleep(time.Duration(300))
-	fmt.Println("sub:",buf)
+	fmt.Println("sub:", buf)
 	c <- true
 }
