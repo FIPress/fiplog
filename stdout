@@ -1,0 +1,21 @@
+2014-12-03 14:38 [ERROR] fiplog_test.go:15 - error
+2014-12-03 14:40 [ERROR] fiplog_test.go:15 - error
+2014-12-03 15:19 [ERROR] fiplog_test.go:15 - error message
+2014-12-03 15:19 [INFO] fiplog_test.go:16 - info message
+2014-12-03 15:19 [WARNING] fiplog_test.go:17 - warning message
+2014-12-03 15:19 [ERROR] fiplog_test.go:18 - this is the 2 message
+2014-12-03 15:21 [ERROR] fiplog_test.go:15 - error message
+2014-12-03 15:21 [INFO] fiplog_test.go:16 - info message
+2014-12-03 15:21 [WARNING] fiplog_test.go:17 - warning message
+2014-12-03 15:21 [ERROR] fiplog_test.go:18 - this is the 2 message
+2014-12-03 15:21 [DEBUG] fiplog_test.go:15 - debug message
+2014-12-03 15:21 [ERROR] fiplog_test.go:16 - error message
+2014-12-03 15:21 [INFO] fiplog_test.go:17 - info message
+2014-12-03 15:21 [WARNING] fiplog_test.go:18 - warning message
+2014-12-03 15:21 [ERROR] fiplog_test.go:19 - this is the 2 message
+2014-12-03 15:21 [ERROR] fiplog_test.go:16 - error message
+2014-12-03 15:21 [WARNING] fiplog_test.go:18 - warning message
+2014-12-03 15:21 [ERROR] <fiplog_test.go:19> - this is the 2 message
+2015-01-29 22:01:29 [ERROR] fiplog_test.go:16 - error message
+2015-01-29 22:01:29 [WARNING] fiplog_test.go:18 - warning message
+2015-01-29 22:01:29 [ERROR] fiplog_test.go:19 - this is the 2 message
