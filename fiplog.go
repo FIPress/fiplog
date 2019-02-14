@@ -28,7 +28,7 @@ const (
 var prefix = [4]string{"DEBUG", "INFO", "WARNING", "ERROR"}
 
 const (
-	defaultBufferSize = 1024 * 64
+	defaultBufferSize = 4096
 	defaultDateFormat = `%df{2006-01-02 15:04:05}`
 	defaultPattern    = `%date [%level] %file - %msg`
 	dateF             = "%date"
@@ -48,7 +48,7 @@ type Config struct {
 	Pattern string //todo: pattern
 }
 
-type Logger struct {
+type FIPLogger struct {
 	//config *Config
 	mutex sync.Mutex
 	level Level
@@ -70,10 +70,10 @@ var (
 	//discard = log.New(ioutil.Discard,"",0)
 	//discard io.WriteCloser = fakeio(0)
 
-	logger *Logger
+	logger *FIPLogger
 )
 
-func GetLogger() *Logger {
+func GetLogger() *FIPLogger {
 	if logger == nil {
 		Init()
 	}
@@ -106,16 +106,18 @@ func InitWithFml(fml *fml.FML) {
 	logger = InitWithConfig(config)
 }
 
-func InitWithConfig(config *Config) *Logger {
+func InitWithConfig(config *Config) *FIPLogger {
 	if logger == nil {
-		logger = new(Logger)
+		logger = new(FIPLogger)
 		logger.level = config.Level
 		if config.BufSize <= 0 {
 			logger.bufSize = defaultBufferSize
 		} else {
 			logger.bufSize = config.BufSize
 		}
-		logger.buffer = make([]byte, 0, logger.bufSize)
+		if logger.level != LevelDebug {
+			logger.buffer = make([]byte, 0, logger.bufSize)
+		}
 		if strings.Contains(config.Pattern, dateF) {
 			logger.pattern = strings.Replace(config.Pattern, dateF, defaultDateFormat, 1)
 		} else {
@@ -157,8 +159,8 @@ func InitWithConfig(config *Config) *Logger {
 	return logger
 }
 
-func (l *Logger) Close() {
-	l.flushAndClose(l.buffer, true)
+func (l *FIPLogger) Close() {
+	l.flush(true)
 }
 
 func getLevel(s string) Level {
@@ -175,7 +177,7 @@ func getLevel(s string) Level {
 	return LevelInfo
 }
 
-func (l *Logger) format(level Level, msg string) (formatted string) {
+func (l *FIPLogger) format(level Level, msg string) (formatted string) {
 	formatted = l.pattern
 	if dateFormatR.MatchString(formatted) {
 		now := time.Now()
@@ -207,19 +209,18 @@ func (l *Logger) format(level Level, msg string) (formatted string) {
 	return
 }
 
-func (l *Logger) log(level Level, msg string) {
-	//log.Println("level:",level,"l.level:",l.level,",msg:",msg)
+func (l *FIPLogger) log(level Level, msg string) {
 	if level < l.level {
 		return
 	}
 
 	formatted := l.format(level, msg)
-	if l.writer == os.Stdout {
+	if l.writer == os.Stdout || l.level == LevelDebug {
 		l.writer.Write([]byte(formatted))
 	} else {
 		l.mutex.Lock()
-		if len(l.buffer)+len(formatted) > l.bufSize {
-			go l.Flush(l.buffer)
+		if len(l.buffer)+len(formatted) > l.bufSize || level == LevelError {
+			go l.flush(false)
 			l.buffer = make([]byte, 0, logger.bufSize)
 		}
 		l.buffer = append(l.buffer, formatted...)
@@ -256,54 +257,57 @@ func (l *Logger) log(level Level, msg string) {
 	return
 }
 
-func (l *Logger) Debug(v ...interface{}) {
+func (l *FIPLogger) Debug(v ...interface{}) {
 	msg := fmt.Sprintln(v...)
 	l.log(LevelDebug, msg)
 }
 
-func (l *Logger) Debugf(format string, v ...interface{}) {
+func (l *FIPLogger) Debugf(format string, v ...interface{}) {
 	msg := fmt.Sprintf(format, v...)
 	l.log(LevelDebug, msg)
 }
 
-func (l *Logger) Info(v ...interface{}) {
+func (l *FIPLogger) Info(v ...interface{}) {
 	msg := fmt.Sprintln(v...)
 	l.log(LevelInfo, msg)
 }
 
-func (l *Logger) Infof(format string, v ...interface{}) {
+func (l *FIPLogger) Infof(format string, v ...interface{}) {
 	msg := fmt.Sprintf(format, v...)
 	l.log(LevelInfo, msg)
 }
 
-func (l *Logger) Warning(v ...interface{}) {
+func (l *FIPLogger) Warning(v ...interface{}) {
 	msg := fmt.Sprintln(v...)
 	l.log(LevelWarning, msg)
 }
 
-func (l *Logger) Warningf(format string, v ...interface{}) {
+func (l *FIPLogger) Warningf(format string, v ...interface{}) {
 	msg := fmt.Sprintf(format, v...)
 	l.log(LevelWarning, msg)
 }
 
-func (l *Logger) Error(v ...interface{}) {
+func (l *FIPLogger) Error(v ...interface{}) {
 	msg := fmt.Sprintln(v...)
 	l.log(LevelError, msg)
 }
 
-func (l *Logger) Errorf(format string, v ...interface{}) {
+func (l *FIPLogger) Errorf(format string, v ...interface{}) {
 	msg := fmt.Sprintf(format, v...)
 	l.log(LevelError, msg)
 }
 
-func (l *Logger) Flush(buffer []byte) {
-	l.flushAndClose(buffer, false)
+func (l *FIPLogger) Flush() {
+	l.flush(false)
 }
 
-func (l *Logger) flushAndClose(buffer []byte, close bool) {
+func (l *FIPLogger) flush(close bool) {
+	if logger.bufSize == 0 {
+		return
+	}
 	l.flushMu.Lock()
 	//log.Println("flush buffer lenght:",len(buffer))
-	_, err := l.writer.Write(buffer)
+	_, err := l.writer.Write(l.buffer)
 	if err != nil {
 		fmt.Println("Flush log error:", err)
 	}
