@@ -1,5 +1,5 @@
 # fiplog
-[fiplog]() simple golang log lib with basic configurable log level, output format and location.
+[fiplog](https://fipress.org/project/fiplog) simple golang log lib with basic configurable log level, output format and location.
 
 A typical config file could be:
 ```
@@ -16,3 +16,5 @@ logger.Debug("debug")
 logger.Info("info")
 logger.Error("error:",err)
 ```
+
+For detailed usage, please refer to the [project page](https://fipress.org/project/fiplog)
