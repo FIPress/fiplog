@@ -30,11 +30,12 @@ var prefix = [4]string{"DEBUG", "INFO", "WARNING", "ERROR"}
 const (
 	defaultBufferSize = 4096
 	defaultDateFormat = `%df{2006-01-02 15:04:05}`
-	defaultPattern    = `%date [%level] %file - %msg`
-	dateF             = "%date"
-	fileF             = "%file"
-	levelF            = "%level"
-	msgF              = "%msg"
+	//defaultPattern    = `%date [%level] %file - %msg`
+	defaultPattern = `%df{2006-01-02 15:04:05} [%level] %file - %msg`
+	dateF          = "%date"
+	fileF          = "%file"
+	levelF         = "%level"
+	msgF           = "%msg"
 )
 
 var dateFormatR = regexp.MustCompile(`%df\{(.*)\}`)
@@ -85,9 +86,9 @@ func Init() {
 		//config := &Config{LevelWarning, "stdout",4096,"%df{2006-01-02 15:04} [%level] %file - %msg"} //todo: read config file
 
 		//wd := os.Getwd()
-		fml, err := fml.Load("fiplog.fml")
+		fml, err := fml.Load("fiplog.conf")
 		if err != nil {
-			fmt.Println("fiplog.fml not found, use default config.")
+			fmt.Println("fiplog.conf not found, use default config.")
 			config := &Config{LevelInfo, "", defaultBufferSize, defaultPattern}
 			InitWithConfig(config)
 		} else {
@@ -99,10 +100,10 @@ func Init() {
 
 func InitWithFml(fml *fml.FML) {
 	config := new(Config)
-	config.Filename = fml.GetString("file", "")
-	config.Level = getLevel(fml.GetString("level", ""))
-	config.BufSize = fml.GetInt("bufSize", defaultBufferSize)
-	config.Pattern = fml.GetString("pattern", defaultPattern)
+	config.Filename = fml.GetString("file")
+	config.Level = getLevel(fml.GetString("level"))
+	config.BufSize = fml.GetIntOrDefault("bufSize", defaultBufferSize)
+	config.Pattern = fml.GetStringOrDefault("pattern", defaultPattern)
 	logger = InitWithConfig(config)
 }
 
@@ -118,7 +119,9 @@ func InitWithConfig(config *Config) *FIPLogger {
 		if logger.level != LevelDebug {
 			logger.buffer = make([]byte, 0, logger.bufSize)
 		}
-		if strings.Contains(config.Pattern, dateF) {
+		if config.Pattern == "" {
+			logger.pattern = defaultPattern
+		} else if strings.Contains(config.Pattern, dateF) {
 			logger.pattern = strings.Replace(config.Pattern, dateF, defaultDateFormat, 1)
 		} else {
 			logger.pattern = config.Pattern
